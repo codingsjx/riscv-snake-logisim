@@ -2,201 +2,241 @@
   {
     "step": 0,
     "action": "初始画面",
-    "cpu_cycles": 381,
+    "cpu_cycles": 575,
     "SCORE": 0,
     "STATUS": 0,
     "LENGTH": 3,
     "BEST": 0,
-    "FRAME": 1
+    "FRAME": 1,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 1,
     "action": "按下 START",
-    "cpu_cycles": 732,
+    "cpu_cycles": 1014,
     "SCORE": 0,
     "STATUS": 1,
     "LENGTH": 3,
     "BEST": 0,
-    "FRAME": 2
+    "FRAME": 2,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 2,
     "action": "向右前进一步",
-    "cpu_cycles": 1190,
+    "cpu_cycles": 1571,
     "SCORE": 0,
     "STATUS": 1,
     "LENGTH": 3,
     "BEST": 0,
-    "FRAME": 3
+    "FRAME": 3,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 3,
     "action": "向右前进一步",
-    "cpu_cycles": 1648,
+    "cpu_cycles": 2128,
     "SCORE": 0,
     "STATUS": 1,
     "LENGTH": 3,
     "BEST": 0,
-    "FRAME": 4
+    "FRAME": 4,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 4,
     "action": "向右前进一步",
-    "cpu_cycles": 2106,
+    "cpu_cycles": 2685,
     "SCORE": 0,
     "STATUS": 1,
     "LENGTH": 3,
     "BEST": 0,
-    "FRAME": 5
+    "FRAME": 5,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 5,
     "action": "吃到食物，长度 +1",
-    "cpu_cycles": 2681,
+    "cpu_cycles": 3371,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 6
+    "FRAME": 6,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 6,
     "action": "按 UP，向上转弯",
-    "cpu_cycles": 3166,
+    "cpu_cycles": 3955,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 7
+    "FRAME": 7,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 7,
     "action": "继续向上",
-    "cpu_cycles": 3659,
+    "cpu_cycles": 4547,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 8
+    "FRAME": 8,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 8,
     "action": "按 LEFT，向左转弯",
-    "cpu_cycles": 4156,
+    "cpu_cycles": 5143,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 9
+    "FRAME": 9,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 9,
     "action": "继续向左",
-    "cpu_cycles": 4651,
+    "cpu_cycles": 5737,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 10
+    "FRAME": 10,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 10,
     "action": "按 PAUSE，游戏暂停",
-    "cpu_cycles": 6025,
+    "cpu_cycles": 7199,
     "SCORE": 1,
     "STATUS": 2,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 11
+    "FRAME": 11,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 11,
     "action": "再次按 PAUSE，恢复",
-    "cpu_cycles": 6406,
+    "cpu_cycles": 7668,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 12
+    "FRAME": 12,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 12,
     "action": "向上接近边界",
-    "cpu_cycles": 6891,
+    "cpu_cycles": 8252,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 13
+    "FRAME": 13,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 13,
     "action": "继续向上",
-    "cpu_cycles": 7384,
+    "cpu_cycles": 8844,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 14
+    "FRAME": 14,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 14,
     "action": "继续向上",
-    "cpu_cycles": 7877,
+    "cpu_cycles": 9436,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 15
+    "FRAME": 15,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 15,
     "action": "继续向上",
-    "cpu_cycles": 8370,
+    "cpu_cycles": 10028,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 16
+    "FRAME": 16,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 16,
     "action": "继续向上",
-    "cpu_cycles": 8863,
+    "cpu_cycles": 10620,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 17
+    "FRAME": 17,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 17,
     "action": "继续向上",
-    "cpu_cycles": 9356,
+    "cpu_cycles": 11212,
     "SCORE": 1,
     "STATUS": 1,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 18
+    "FRAME": 18,
+    "MODE": 0,
+    "CAUSE": 0
   },
   {
     "step": 18,
     "action": "撞到边界，游戏结束",
-    "cpu_cycles": 9785,
+    "cpu_cycles": 11734,
     "SCORE": 1,
     "STATUS": 3,
     "LENGTH": 4,
     "BEST": 1,
-    "FRAME": 19
+    "FRAME": 19,
+    "MODE": 0,
+    "CAUSE": 1
   },
   {
     "step": 19,
     "action": "按 RESTART，保留最高分",
-    "cpu_cycles": 10161,
+    "cpu_cycles": 12304,
     "SCORE": 0,
     "STATUS": 0,
     "LENGTH": 3,
     "BEST": 1,
-    "FRAME": 20
+    "FRAME": 20,
+    "MODE": 0,
+    "CAUSE": 0
   }
 ]

@@ -29,18 +29,18 @@ def render(J):
     assert core_state.getValue(Location.create(50,50))==Value.TRUE
     state.setData(reset,Singleton(Value.FALSE));state.markComponentAsDirty(reset);prop.propagate()
     print('Verified all 8 panel buttons and CPU reset routing.',flush=True)
-    for _ in range(1000):prop.tick();prop.propagate()
+    for _ in range(2000):prop.tick();prop.propagate()
     pixels=display_pixels(state,circuit)
     expected={(8,5):(0,1,0),(8,6):(0,1,0),(8,7):(0,1,1),(8,11):(1,0,0)}
     assert {p:v for p,v in pixels.items() if any(v)}==expected
-    for name,expected in [('SCORE',0),('STATUS',0),('LENGTH',3),('BEST',0),('FRAME',1)]:
+    for name,expected in [('SCORE',0),('STATUS',0),('LENGTH',3),('BEST',0),('FRAME',1),('MODE',0),('CAUSE',0)]:
         probe=next(c for c in circuit.getNonWires() if str(c.getFactory().getName())=='Probe' and any(str(a.getName())=='label' and str(c.getAttributeSet().getValue(a))==name for a in c.getAttributeSet().getAttributes()))
         value=state.getValue(probe.getLocation())
         assert value.isFullyDefined() and int(value.toIntValue())==expected,f'{name}={value}'
     print('RGB PIXELS verified: green body, cyan head, red food.',flush=True)
-    image=J.JClass('java.awt.image.BufferedImage')(1460,1040,1)
+    image=J.JClass('java.awt.image.BufferedImage')(1460,1160,1)
     graphics=image.createGraphics()
-    graphics.setColor(J.JClass('java.awt.Color').WHITE);graphics.fillRect(0,0,1460,1040)
+    graphics.setColor(J.JClass('java.awt.Color').WHITE);graphics.fillRect(0,0,1460,1160)
     context=J.JClass('com.cburch.logisim.comp.ComponentDrawContext')(J.JClass('javax.swing.JPanel')(),circuit,state,graphics,graphics)
     circuit.draw(context,J.java.util.Collections.emptySet())
     J.JClass('javax.imageio.ImageIO').write(image,'png',J.java.io.File(str(ROOT/'build/panel.png')))

@@ -43,7 +43,7 @@ def check(J):
 
     def press(keys):
         old=get('FRAME')
-        watched=['SCORE','STATUS','LENGTH','BEST']+[f'RGB{r:02d}{group}' for r in range(16) for group in 'AB']
+        watched=['SCORE','STATUS','LENGTH','BEST','MODE','CAUSE']+[f'RGB{r:02d}{group}' for r in range(16) for group in 'AB']
         before=tuple(get(name) for name in watched)
         # Pulse is complete before any CPU clock: the peripheral must retain it.
         set_pin('KEYS',keys);set_pin('KEYS',0)

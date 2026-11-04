@@ -5,6 +5,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'tools'))
 from rv32 import Machine, build
+from game_map import OBSTACLES
 
 
 class GameTests(unittest.TestCase):
@@ -21,6 +22,14 @@ class GameTests(unittest.TestCase):
 
     def head(self):
         return self.m.mem[256+4*self.m.mem[8]]
+
+    def obstacles(self):
+        return {(x,y) for y in range(16) for x in range(16)
+                if self.m.mem.get(0x540+4*y,0) & (1<<(15-x))}
+
+    def obstacle_mode(self):
+        self.m.mem[0x710]=1
+        self.call('game_reset')
 
     def arrange(self, cells, direction, food, tail=0):
         m = self.m.mem
@@ -55,12 +64,14 @@ class GameTests(unittest.TestCase):
             self.arrange([cell], direction, 0x88)
             self.call('game_step')
             self.assertEqual(self.m.mem[24], 3)
+            self.assertEqual(self.m.mem[56], 1)
             self.assertEqual(self.head(), cell)
 
     def test_self_collision(self):
         self.arrange([0x45, 0x55, 0x56, 0x46], 2, 0x88)
         self.call('game_step')
         self.assertEqual(self.m.mem[24], 3)
+        self.assertEqual(self.m.mem[56], 2)
 
     def test_departing_tail_is_legal(self):
         self.arrange([0x45, 0x55, 0x56, 0x46], 3, 0x88)
@@ -154,6 +165,66 @@ class GameTests(unittest.TestCase):
         self.assertEqual((self.m.mem[0], self.m.mem[24], self.m.mem[16]), (256, 4, 0xffffffff))
         self.call('render')
         self.assertTrue(all(self.m.mem[0x740+4*y] == 65535 for y in range(16)))
+
+    def test_obstacle_map_safe_and_connected(self):
+        self.obstacle_mode()
+        walls=self.obstacles()
+        self.assertEqual(walls,OBSTACLES)
+        self.assertEqual((len(walls),self.m.mem[52]),(24,232))
+        self.assertTrue(all((x,8) not in walls for x in range(16)))
+        seen={(0,0)};todo=[(0,0)]
+        while todo:
+            x,y=todo.pop()
+            for p in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
+                if 0<=p[0]<16 and 0<=p[1]<16 and p not in walls and p not in seen:
+                    seen.add(p);todo.append(p)
+        self.assertEqual(len(seen),232)
+
+    def test_obstacles_collide_from_four_directions(self):
+        self.obstacle_mode()
+        for pos,direction in [(0x42,1),(0x33,2),(0x73,0),(0x4e,3)]:
+            self.arrange([pos],direction,0x8b)
+            self.call('game_step')
+            self.assertEqual((self.m.mem[24],self.m.mem[56],self.head()),(3,3,pos))
+
+    def test_obstacle_opening_is_passable(self):
+        self.obstacle_mode()
+        self.arrange([0x83],0,0x8b)
+        self.call('game_step')
+        self.assertEqual((self.head(),self.m.mem[24]),(0x73,1))
+
+    def test_food_never_spawns_on_obstacle(self):
+        self.obstacle_mode()
+        walls={y*16+x for x,y in OBSTACLES}
+        for seed in range(256):
+            self.m.mem[20]=seed
+            self.call('spawn_food')
+            self.assertNotIn(self.m.mem[16],walls|{0x85,0x86,0x87})
+
+    def test_map_change_waits_for_restart(self):
+        self.obstacle_mode()
+        self.m.mem[0x710]=0
+        self.assertEqual(self.m.mem[48],1)
+        self.assertEqual(len(self.obstacles()),24)
+        self.call('game_reset')
+        self.assertEqual((self.m.mem[48],self.m.mem[52]),(0,256))
+        self.assertFalse(self.obstacles())
+        self.assertEqual(self.m.mem[56],0)
+
+    def test_obstacle_last_free_cell_and_win(self):
+        self.obstacle_mode()
+        walls={y*16+x for x,y in OBSTACLES}
+        free=[p for p in range(256) if p not in walls]
+        cells=[p for p in free if p not in (0,1)]+[1]
+        self.arrange(cells,3,0)
+        self.m.mem[20]=51  # The next LCG candidate is the sole free cell, zero.
+        self.call('spawn_food')
+        self.assertEqual(self.m.mem[16],0)
+        self.call('game_step')
+        self.assertEqual((self.m.mem[0],self.m.mem[24],self.m.mem[16]),(232,4,0xffffffff))
+        self.call('render')
+        self.assertEqual(self.m.mem[0x79c],1)
+        self.assertEqual(sum(self.m.mem[0x7a0+4*y].bit_count() for y in range(16)),24)
 
 
 if __name__ == '__main__': unittest.main(verbosity=2)

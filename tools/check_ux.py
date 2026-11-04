@@ -1,6 +1,7 @@
 """Verify user-facing controls through the actual presentation circuit."""
 from java_bridge import start,finish,ROOT
 from panel_runtime import display_pixels
+from game_map import OBSTACLES
 
 
 def check(J):
@@ -70,6 +71,36 @@ def check(J):
     click('PAUSE');assert get('STATUS')==1
     click('RESTART');assert get('STATUS')==0 and get('BEST')==1
     print('Pause, resume, and restart user flow verified.',flush=True)
+    # Changing the requested map must not mutate an existing round.
+    pin('OBSTACLES',1)
+    assert get('MODE')==0
+    click('RESTART');assert get('MODE')==1 and get('CAUSE')==0
+    expected={(y,x) for x,y in OBSTACLES}
+    def walls():
+        return {pos for pos,color in display_pixels(s,c).items() if color==(1,0,1)}
+    assert walls()==expected
+    click('START')
+    for _ in range(4):click('STEP')
+    assert get('SCORE')==1 and get('LENGTH')==4
+    red={pos for pos,color in display_pixels(s,c).items() if color==(1,0,0)}
+    # The first two RNG candidates are obstacles; the CPU must reject both.
+    assert red=={(3,0)},red
+    assert walls()==expected
+    print('Obstacle map, safe spawn, and CPU-side food rejection verified.',flush=True)
+    old=get('FRAME');button('UP',True);button('STEP',True)
+    button('UP',False);button('STEP',False)
+    until(lambda:get('FRAME')!=old);cycles(100)
+    click('STEP');click('STEP')
+    assert get('STATUS')==1
+    click('STEP')
+    assert get('STATUS')==3 and get('CAUSE')==3
+    assert display_pixels(s,c)[(5,11)]==(0,1,1)
+    assert walls()==expected
+    pin('OBSTACLES',0);assert get('MODE')==1
+    click('RESTART')
+    assert get('MODE')==0 and get('CAUSE')==0 and not walls()
+    assert get('BEST')==1
+    print('Obstacle collision and switching back to classic mode verified.',flush=True)
 
 
 if __name__=='__main__':

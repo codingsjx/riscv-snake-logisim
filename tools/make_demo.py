@@ -4,14 +4,17 @@ The GIF is a presentation of sampled circuit states, not a real-time screen capt
 Game pixels are visualized from Logisim RGB input values; no game logic is reimplemented.
 """
 import json
+import argparse
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from java_bridge import start, finish, ROOT
-from panel_runtime import pixel_board
+from panel_runtime import pixel_board,display_pixels
+from game_map import OBSTACLES
 
 
-def demonstrate(J):
-    dest=ROOT/'build/demo_frames';dest.mkdir(parents=True,exist_ok=True)
+def demonstrate(J,obstacle_mode=False):
+    dest=ROOT/('build/obstacle_demo_frames' if obstacle_mode else 'build/demo_frames')
+    dest.mkdir(parents=True,exist_ok=True)
     loader=J.JClass('com.cburch.logisim.file.Loader')(None)
     file=loader.openLogisimFile(J.java.io.File(str(ROOT/'snake.circ')))
     project=J.JClass('com.cburch.logisim.proj.Project')(file)
@@ -28,6 +31,10 @@ def demonstrate(J):
     manual=next(c for c in circuit.getNonWires() if str(c.getFactory().getName())=='Pin' and label(c).startswith('MANUAL'))
     manual.getFactory().setValue(state.getInstanceState(manual),Value.TRUE)
     state.markComponentAsDirty(manual);prop.propagate()
+    if obstacle_mode:
+        mode=next(c for c in circuit.getNonWires() if str(c.getFactory().getName())=='Pin' and label(c).startswith('OBSTACLES'))
+        mode.getFactory().setValue(state.getInstanceState(mode),Value.TRUE)
+        state.markComponentAsDirty(mode);prop.propagate()
 
     def button(name,down):
         c=buttons[name]
@@ -64,21 +71,29 @@ def demonstrate(J):
     status_names={0:'准备开始',1:'正在运行',2:'已暂停',3:'游戏结束',4:'获胜'}
     def capture(action,duration=800):
         index=len(frames)
-        data={name:get(name) for name in ['SCORE','STATUS','LENGTH','BEST','FRAME']}
-        image=J.JClass('java.awt.image.BufferedImage')(1460,1040,1)
+        data={name:get(name) for name in ['SCORE','STATUS','LENGTH','BEST','FRAME','MODE','CAUSE']}
+        colors=display_pixels(state,circuit)
+        purple={p for p,color in colors.items() if color==(1,0,1)}
+        assert purple==({(y,x) for x,y in OBSTACLES} if obstacle_mode else set())
+        assert not any(colors[(y,x)]==(1,0,0) for x,y in OBSTACLES) if obstacle_mode else True
+        image=J.JClass('java.awt.image.BufferedImage')(1460,1160,1)
         graphics=image.createGraphics()
-        graphics.setColor(J.JClass('java.awt.Color').WHITE);graphics.fillRect(0,0,1460,1040)
+        graphics.setColor(J.JClass('java.awt.Color').WHITE);graphics.fillRect(0,0,1460,1160)
         context=J.JClass('com.cburch.logisim.comp.ComponentDrawContext')(J.JClass('javax.swing.JPanel')(),circuit,state,graphics,graphics)
         circuit.draw(context,J.java.util.Collections.emptySet())
         native=dest/f'{index:02d}_native.png'
         J.JClass('javax.imageio.ImageIO').write(image,'png',J.java.io.File(str(native)))
+        if obstacle_mode and index==0:
+            J.JClass('javax.imageio.ImageIO').write(image,'png',J.java.io.File(str(ROOT/'build/obstacles-panel.png')))
         graphics.dispose()
         # Read the actual 256 RGB LED inputs; only presentation scaling is applied.
         board=pixel_board(state,circuit)
         frame=Image.new('RGB',(1240,860),'#101c2a')
         draw=ImageDraw.Draw(frame)
-        draw.text((40,23),'贪吃蛇 · 自制 RISC-V CPU 实际运行',font=font(30,True),fill='#f0f5fb')
-        draw.text((42,69),'Logisim 重定向流水线  /  青色蛇头 · 绿色蛇身 · 红色食物',font=font(17),fill='#a6b8ce')
+        title='贪吃蛇 · 障碍挑战模式' if obstacle_mode else '贪吃蛇 · 自制 RISC-V CPU 实际运行'
+        draw.text((40,23),title,font=font(30,True),fill='#f0f5fb')
+        legend='青色蛇头 · 绿色蛇身 · 红色食物 · 紫色障碍物' if obstacle_mode else 'Logisim 重定向流水线  /  青色蛇头 · 绿色蛇身 · 红色食物'
+        draw.text((42,69),legend,font=font(17),fill='#a6b8ce')
         frame.paste(board,(42,128))
         draw.rectangle((41,127,682,768),outline='#47627e',width=2)
         x=730
@@ -114,30 +129,38 @@ def demonstrate(J):
         else:capture('向右前进一步',650)
     press('UP','STEP');capture('按 UP，向上转弯',1000)
     press('STEP');capture('继续向上',700)
-    press('LEFT','STEP');capture('按 LEFT，向左转弯',1000)
-    press('STEP');capture('继续向左',700)
+    if not obstacle_mode:
+        press('LEFT','STEP');capture('按 LEFT，向左转弯',1000)
+        press('STEP');capture('继续向左',700)
     press('PAUSE');assert get('STATUS')==2
     before=get('FRAME');run(1000);assert get('FRAME')==before
     capture('按 PAUSE，游戏暂停',2400)
     press('PAUSE');assert get('STATUS')==1
     capture('再次按 PAUSE，恢复',1300)
-    press('UP','STEP');capture('向上接近边界',600)
-    for _ in range(5):press('STEP');capture('继续向上',450)
+    if obstacle_mode:
+        press('STEP');capture('沿通道向上前进',1000)
+    else:
+        press('UP','STEP');capture('向上接近边界',600)
+        for _ in range(5):press('STEP');capture('继续向上',450)
     press('STEP');assert get('STATUS')==3
-    capture('撞到边界，游戏结束',2400)
+    assert get('CAUSE')==(3 if obstacle_mode else 1)
+    capture('撞到障碍物，游戏结束' if obstacle_mode else '撞到边界，游戏结束',2400)
     press('RESTART')
     assert get('STATUS')==0 and get('SCORE')==0 and get('BEST')==1
     capture('按 RESTART，保留最高分',2600)
-    out=ROOT/'build/snake-demo.gif'
+    basename='snake-obstacles-demo' if obstacle_mode else 'snake-demo'
+    out=ROOT/f'build/{basename}.gif'
     frames[0].save(out,save_all=True,append_images=frames[1:],duration=durations,loop=0,optimize=True,disposal=2)
-    frames[5].save(ROOT/'build/snake-demo-poster.png')
-    (ROOT/'build/demo-record.json').write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding='utf-8')
+    frames[5].save(ROOT/f'build/{basename}-poster.png')
+    record_name='obstacles-demo-record.json' if obstacle_mode else 'demo-record.json'
+    (ROOT/f'build/{record_name}').write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding='utf-8')
     print('DEMO COMPLETE',out,'frames',len(frames),'duration_ms',sum(durations),flush=True)
 
 
 if __name__=='__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('--obstacles',action='store_true');args=parser.parse_args()
     J=start();code=0
-    try:demonstrate(J)
+    try:demonstrate(J,args.obstacles)
     except BaseException:
         import traceback;traceback.print_exc();code=1
     finally:finish(J,code)

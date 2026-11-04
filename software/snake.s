@@ -2,10 +2,12 @@
 # Only course base instructions are used; no MUL/DIV/LUI/AUIPC/variable shifts.
 # Private calling convention: ra/sp/s11 preserved, other registers are scratch.
 # RAM: 0 length,4 tail,8 head,12 direction,16 food,20 RNG,24 status,
-# 28 score,32 last tick,36 previous keys,40 pending direction,44 high score.
-# Queue 0x100..0x4ff (256 words); mask table 0x500..0x53f; stack top 0x680.
+# 28 score,32 last tick,40 pending direction,44 high score,
+# 48 active map,52 usable cells,56 collision cause (1 wall/2 body/3 obstacle).
+# Queue 0x100..0x4ff; mask table 0x500..0x53f; obstacles 0x540..0x57f.
+# Stack top 0x680. The map input is sampled on reset/restart.
 # MMIO: 0x700 latched key events; 0x704 cycles; 0x708 interval (0=manual);
-# 0x70c write-one-to-clear key acknowledgement.
+# 0x70c key acknowledgement; 0x710 requested map (0 classic,1 obstacles).
 # Framebuffer 0x740..0x77c, metadata 0x780..0x798; see README.
 
 start:
@@ -138,6 +140,36 @@ game_reset:
     sw t0, 20(zero)
     sw zero, 24(zero)
     sw zero, 28(zero)
+    sw zero, 56(zero)
+    addi t0, zero, 1344
+    addi t1, zero, 16
+clear_obstacles:
+    sw zero, 0(t0)
+    addi t0, t0, 4
+    addi t1, t1, -1
+    bne t1, zero, clear_obstacles
+    lw t0, 16(s11)
+    andi t0, t0, 1
+    sw t0, 48(zero)
+    addi t1, zero, 256
+    sw t1, 52(zero)
+    beq t0, zero, map_ready
+    # 24 fixed obstacles; row 8 and the starting corridor remain open.
+    addi t0, zero, 483
+    slli t0, t0, 4
+    ori t0, t0, 12
+    sw t0, 1360(zero)
+    sw t0, 1388(zero)
+    addi t0, zero, 1
+    slli t0, t0, 12
+    ori t0, t0, 8
+    sw t0, 1364(zero)
+    sw t0, 1368(zero)
+    sw t0, 1380(zero)
+    sw t0, 1384(zero)
+    addi t0, zero, 232
+    sw t0, 52(zero)
+map_ready:
     lw t0, 4(s11)
     sw t0, 32(zero)
     lw t0, 0(s11)
@@ -168,23 +200,33 @@ game_step:
     beq t0, t3, move_right
     addi t3, zero, 2
     beq t0, t3, move_down
-    beq t1, zero, lose
+    beq t1, zero, wall_hit
     addi s0, s0, -1
     jal zero, collision
 move_up:
-    beq t2, zero, lose
+    beq t2, zero, wall_hit
     addi s0, s0, -16
     jal zero, collision
 move_right:
     addi t3, zero, 15
-    beq t1, t3, lose
+    beq t1, t3, wall_hit
     addi s0, s0, 1
     jal zero, collision
 move_down:
     addi t3, zero, 15
-    beq t2, t3, lose
+    beq t2, t3, wall_hit
     addi s0, s0, 16
 collision:
+    andi t0, s0, 15
+    slli t0, t0, 2
+    addi t0, t0, 1280
+    lw t1, 0(t0)
+    srli t0, s0, 4
+    slli t0, t0, 2
+    addi t0, t0, 1344
+    lw t0, 0(t0)
+    and t0, t0, t1
+    bne t0, zero, obstacle_hit
     lw t0, 16(zero)
     sub t0, s0, t0
     sltu s1, zero, t0
@@ -201,7 +243,7 @@ collision_loop:
     slli t2, t0, 2
     addi t2, t2, 256
     lw t3, 0(t2)
-    beq t3, s0, lose
+    beq t3, s0, body_hit
     addi t0, t0, 1
     andi t0, t0, 255
     addi t1, t1, -1
@@ -232,10 +274,21 @@ grow:
     beq t3, zero, check_win
     sw t1, 44(zero)
 check_win:
-    addi t1, zero, 256
+    lw t1, 52(zero)
     beq t0, t1, win
     jal ra, spawn_food
     jal zero, step_return
+wall_hit:
+    addi t0, zero, 1
+    sw t0, 56(zero)
+    jal zero, lose
+body_hit:
+    addi t0, zero, 2
+    sw t0, 56(zero)
+    jal zero, lose
+obstacle_hit:
+    addi t0, zero, 3
+    sw t0, 56(zero)
 lose:
     addi t0, zero, 3
     sw t0, 24(zero)
@@ -258,6 +311,17 @@ next_candidate:
     add t0, t0, t1
     addi t0, t0, 1
     andi t0, t0, 255
+    # Reject obstacle cells before scanning the snake queue.
+    andi t1, t0, 15
+    slli t1, t1, 2
+    addi t1, t1, 1280
+    lw t2, 0(t1)
+    srli t1, t0, 4
+    slli t1, t1, 2
+    addi t1, t1, 1344
+    lw t1, 0(t1)
+    and t1, t1, t2
+    bne t1, zero, next_candidate
     lw t1, 4(zero)
     lw t2, 0(zero)
 food_scan:
@@ -280,8 +344,14 @@ render:
     sw ra, 12(sp)
     addi t0, zero, 1856
     addi t1, zero, 16
+    addi t2, zero, 1344
+    addi t3, zero, 1952
 clear_rows:
     sw zero, 0(t0)
+    lw t4, 0(t2)
+    sw t4, 0(t3)
+    addi t2, t2, 4
+    addi t3, t3, 4
     addi t0, t0, 4
     addi t1, t1, -1
     bne t1, zero, clear_rows
@@ -316,6 +386,10 @@ metadata:
     sw t0, 144(s11)
     lw t0, 44(zero)
     sw t0, 148(s11)
+    lw t0, 48(zero)
+    sw t0, 156(s11)
+    lw t0, 56(zero)
+    sw t0, 224(s11)
     lw t0, 152(s11)
     addi t0, t0, 1
     sw t0, 152(s11)

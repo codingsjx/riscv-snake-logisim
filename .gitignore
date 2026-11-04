@@ -2,6 +2,7 @@
 tools/_vendor/
 build/display-classes/
 build/demo_frames/
+build/obstacle_demo_frames/
 __pycache__/
 *.py[cod]
 .pytest_cache/
