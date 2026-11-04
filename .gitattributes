@@ -7,3 +7,5 @@
 *.md text eol=lf
 *.hex text eol=lf
 *.lst text eol=lf
+*.java text eol=lf
+*.json text eol=lf

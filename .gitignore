@@ -1,5 +1,7 @@
 # Local Python dependencies and caches
 tools/_vendor/
+build/display-classes/
+build/demo_frames/
 __pycache__/
 *.py[cod]
 .pytest_cache/

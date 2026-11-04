@@ -1,5 +1,6 @@
 """Render the actual Logisim presentation circuit to a PNG, headlessly."""
 from java_bridge import start, finish, ROOT
+from panel_runtime import display_pixels
 
 
 def render(J):
@@ -29,22 +30,17 @@ def render(J):
     state.setData(reset,Singleton(Value.FALSE));state.markComponentAsDirty(reset);prop.propagate()
     print('Verified all 8 panel buttons and CPU reset routing.',flush=True)
     for _ in range(1000):prop.tick();prop.propagate()
-    matrix=next(c for c in circuit.getNonWires() if str(c.getFactory().getName())=='DotMatrix')
-    rows=[state.getValue(e.getLocation()) for e in matrix.getEnds()]
-    assert all(v.isFullyDefined() for v in rows),str(rows)
-    assert int(rows[8].toIntValue())==0x0710, str(rows)
+    pixels=display_pixels(state,circuit)
+    expected={(8,5):(0,1,0),(8,6):(0,1,0),(8,7):(0,1,1),(8,11):(1,0,0)}
+    assert {p:v for p,v in pixels.items() if any(v)}==expected
     for name,expected in [('SCORE',0),('STATUS',0),('LENGTH',3),('BEST',0),('FRAME',1)]:
         probe=next(c for c in circuit.getNonWires() if str(c.getFactory().getName())=='Probe' and any(str(a.getName())=='label' and str(c.getAttributeSet().getValue(a))==name for a in c.getAttributeSet().getAttributes()))
         value=state.getValue(probe.getLocation())
         assert value.isFullyDefined() and int(value.toIntValue())==expected,f'{name}={value}'
-    # Inspect the actual matrix's coordinate mapping, not just its bus inputs.
-    data=state.getData(matrix)
-    field=data.getClass().getDeclaredField('grid');field.setAccessible(True)
-    print('ACTIVE PIXELS',[(i//16,i%16) for i,v in enumerate(field.get(data)) if str(v)=='1'],flush=True)
-    image=J.JClass('java.awt.image.BufferedImage')(1560,1120,1)
+    print('RGB PIXELS verified: green body, cyan head, red food.',flush=True)
+    image=J.JClass('java.awt.image.BufferedImage')(1460,1040,1)
     graphics=image.createGraphics()
-    graphics.setColor(J.JClass('java.awt.Color').WHITE);graphics.fillRect(0,0,1560,1120)
-    graphics.scale(1.25,1.25)
+    graphics.setColor(J.JClass('java.awt.Color').WHITE);graphics.fillRect(0,0,1460,1040)
     context=J.JClass('com.cburch.logisim.comp.ComponentDrawContext')(J.JClass('javax.swing.JPanel')(),circuit,state,graphics,graphics)
     circuit.draw(context,J.java.util.Collections.emptySet())
     J.JClass('javax.imageio.ImageIO').write(image,'png',J.java.io.File(str(ROOT/'build/panel.png')))

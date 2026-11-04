@@ -4,7 +4,8 @@
 # RAM: 0 length,4 tail,8 head,12 direction,16 food,20 RNG,24 status,
 # 28 score,32 last tick,36 previous keys,40 pending direction,44 high score.
 # Queue 0x100..0x4ff (256 words); mask table 0x500..0x53f; stack top 0x680.
-# MMIO: 0x700 keys; 0x704 cycle counter; 0x708 move interval.
+# MMIO: 0x700 latched key events; 0x704 cycles; 0x708 interval (0=manual);
+# 0x70c write-one-to-clear key acknowledgement.
 # Framebuffer 0x740..0x77c, metadata 0x780..0x798; see README.
 
 start:
@@ -25,10 +26,8 @@ init_masks:
 
 main:
     lw t0, 0(s11)
-    lw t1, 36(zero)
-    sw t0, 36(zero)
-    xori t1, t1, -1
-    and t1, t0, t1
+    sw t0, 12(s11)
+    addi t1, t0, 0
     addi t6, t1, 0
     andi t2, t1, 64
     bne t2, zero, restart
@@ -86,6 +85,7 @@ check_time:
     lw t1, 32(zero)
     sub t1, t0, t1
     lw t2, 8(s11)
+    beq t2, zero, main
     sltu t3, t1, t2
     bne t3, zero, main
 move_now:
@@ -94,6 +94,9 @@ move_now:
     sw t1, 12(zero)
     jal ra, game_step
     jal ra, render
+    # Wait a full interval after rendering; slow frames must not cause catch-up.
+    lw t0, 4(s11)
+    sw t0, 32(zero)
     jal zero, main
 restart:
     jal ra, game_reset
@@ -101,9 +104,9 @@ restart:
 begin_game:
     addi t2, zero, 1
     sw t2, 24(zero)
+    jal ra, render
     lw t0, 4(s11)
     sw t0, 32(zero)
-    jal ra, render
     jal zero, main
 pause_game:
     addi t2, zero, 2
@@ -113,9 +116,9 @@ pause_game:
 resume_game:
     addi t2, zero, 1
     sw t2, 24(zero)
+    jal ra, render
     lw t0, 4(s11)
     sw t0, 32(zero)
-    jal ra, render
     jal zero, main
 
 game_reset:
@@ -138,7 +141,7 @@ game_reset:
     lw t0, 4(s11)
     sw t0, 32(zero)
     lw t0, 0(s11)
-    sw t0, 36(zero)
+    sw t0, 12(s11)
     addi t0, zero, 133
     sw t0, 256(zero)
     addi t0, zero, 134

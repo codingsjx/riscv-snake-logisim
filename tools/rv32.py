@@ -97,6 +97,13 @@ class Machine:
         self.pc = 0
         self.cycles = 0
         self.stores = []
+        self.raw_keys = 0
+
+    def set_keys(self, value):
+        """Model edge-latched hardware: a held button creates one event."""
+        value &= 255
+        self.mem[0x700] = self.mem.get(0x700, 0) | (value & ~self.raw_keys)
+        self.raw_keys = value
 
     def load(self, addr):
         if addr & 3:
@@ -111,6 +118,8 @@ class Machine:
         if addr & 3 or not 0 <= addr < 4096:
             raise ValueError(f'out of bounds/unaligned store {addr:x}')
         self.mem[addr] = value & 0xffffffff
+        if addr == 0x70c:
+            self.mem[0x700] = self.mem.get(0x700, 0) & ~value
         if addr >= 0x740:
             self.stores.append((addr, value & 0xffffffff))
 

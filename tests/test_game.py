@@ -29,7 +29,7 @@ class GameTests(unittest.TestCase):
 
     def poll(self, keys):
         m = self.m
-        m.mem[0x700] = keys
+        m.set_keys(keys)
         m.pc = self.labels['main']
         m.step()
         m.until(lambda x: x.pc == self.labels['main'])
@@ -109,6 +109,35 @@ class GameTests(unittest.TestCase):
         self.m.cycles = 200
         self.poll(0)
         self.assertEqual(self.head(), 0x88)
+
+    def test_short_click_latched_until_cpu_polls(self):
+        self.m.set_keys(16)
+        self.m.set_keys(0)
+        self.poll(0)
+        self.assertEqual(self.m.mem[24], 1)
+        self.assertEqual(self.m.mem[0x700], 0)
+
+    def test_manual_mode_never_auto_moves(self):
+        self.m.mem[24] = 1
+        self.m.mem[0x708] = 0
+        self.m.cycles = 0x70000000
+        self.poll(0)
+        self.assertEqual(self.head(), 0x87)
+        self.poll(128)
+        self.assertEqual(self.head(), 0x88)
+        self.poll(128)
+        self.assertEqual(self.head(), 0x88)
+
+    def test_second_click_while_previous_frame_busy(self):
+        self.poll(16)
+        self.poll(0)
+        self.m.mem[0x708] = 0
+        self.poll(128)
+        self.m.set_keys(0)
+        self.m.set_keys(128)
+        self.m.set_keys(0)
+        self.poll(0)
+        self.assertEqual(self.head(), 0x89)
 
     def test_last_free_cell_and_full_board(self):
         self.arrange(list(range(1, 256)), 1, 0)

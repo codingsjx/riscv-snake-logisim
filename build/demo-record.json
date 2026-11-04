@@ -1,0 +1,202 @@
+[
+  {
+    "step": 0,
+    "action": "初始画面",
+    "cpu_cycles": 381,
+    "SCORE": 0,
+    "STATUS": 0,
+    "LENGTH": 3,
+    "BEST": 0,
+    "FRAME": 1
+  },
+  {
+    "step": 1,
+    "action": "按下 START",
+    "cpu_cycles": 732,
+    "SCORE": 0,
+    "STATUS": 1,
+    "LENGTH": 3,
+    "BEST": 0,
+    "FRAME": 2
+  },
+  {
+    "step": 2,
+    "action": "向右前进一步",
+    "cpu_cycles": 1190,
+    "SCORE": 0,
+    "STATUS": 1,
+    "LENGTH": 3,
+    "BEST": 0,
+    "FRAME": 3
+  },
+  {
+    "step": 3,
+    "action": "向右前进一步",
+    "cpu_cycles": 1648,
+    "SCORE": 0,
+    "STATUS": 1,
+    "LENGTH": 3,
+    "BEST": 0,
+    "FRAME": 4
+  },
+  {
+    "step": 4,
+    "action": "向右前进一步",
+    "cpu_cycles": 2106,
+    "SCORE": 0,
+    "STATUS": 1,
+    "LENGTH": 3,
+    "BEST": 0,
+    "FRAME": 5
+  },
+  {
+    "step": 5,
+    "action": "吃到食物，长度 +1",
+    "cpu_cycles": 2681,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 6
+  },
+  {
+    "step": 6,
+    "action": "按 UP，向上转弯",
+    "cpu_cycles": 3166,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 7
+  },
+  {
+    "step": 7,
+    "action": "继续向上",
+    "cpu_cycles": 3659,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 8
+  },
+  {
+    "step": 8,
+    "action": "按 LEFT，向左转弯",
+    "cpu_cycles": 4156,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 9
+  },
+  {
+    "step": 9,
+    "action": "继续向左",
+    "cpu_cycles": 4651,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 10
+  },
+  {
+    "step": 10,
+    "action": "按 PAUSE，游戏暂停",
+    "cpu_cycles": 6025,
+    "SCORE": 1,
+    "STATUS": 2,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 11
+  },
+  {
+    "step": 11,
+    "action": "再次按 PAUSE，恢复",
+    "cpu_cycles": 6406,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 12
+  },
+  {
+    "step": 12,
+    "action": "向上接近边界",
+    "cpu_cycles": 6891,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 13
+  },
+  {
+    "step": 13,
+    "action": "继续向上",
+    "cpu_cycles": 7384,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 14
+  },
+  {
+    "step": 14,
+    "action": "继续向上",
+    "cpu_cycles": 7877,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 15
+  },
+  {
+    "step": 15,
+    "action": "继续向上",
+    "cpu_cycles": 8370,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 16
+  },
+  {
+    "step": 16,
+    "action": "继续向上",
+    "cpu_cycles": 8863,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 17
+  },
+  {
+    "step": 17,
+    "action": "继续向上",
+    "cpu_cycles": 9356,
+    "SCORE": 1,
+    "STATUS": 1,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 18
+  },
+  {
+    "step": 18,
+    "action": "撞到边界，游戏结束",
+    "cpu_cycles": 9785,
+    "SCORE": 1,
+    "STATUS": 3,
+    "LENGTH": 4,
+    "BEST": 1,
+    "FRAME": 19
+  },
+  {
+    "step": 19,
+    "action": "按 RESTART，保留最高分",
+    "cpu_cycles": 10161,
+    "SCORE": 0,
+    "STATUS": 0,
+    "LENGTH": 3,
+    "BEST": 1,
+    "FRAME": 20
+  }
+]

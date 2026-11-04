@@ -14,7 +14,10 @@ def start():
     if not (vendor/'jpype').exists():
         shutil.copytree(ROOT/'tools/_vendor', vendor, dirs_exist_ok=True)
     sys.path.insert(0, str(vendor))
-    shutil.copy2(ROOT/'runtime/logisim.exe', vendor/'logisim.jar')
+    engine=ROOT/'runtime/logisim.exe'
+    cached=vendor/'logisim.jar'
+    if not cached.exists() or cached.read_bytes()!=engine.read_bytes():
+        shutil.copy2(engine,cached)
     import jpype as J
     java_home = os.environ.get('SNAKE_JAVA_HOME', r'D:\java')
     jvm = Path(java_home)/'bin/server/jvm.dll'

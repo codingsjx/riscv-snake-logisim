@@ -12,7 +12,7 @@ def check(J):
     prop=state.getPropagator()
     pins={}
     for c in core.getNonWires():
-        if str(c.getFactory().getName())=='Pin':
+        if str(c.getFactory().getName()) in ('Pin','Probe'):
             label=next((str(c.getAttributeSet().getValue(a)) for a in c.getAttributeSet().getAttributes() if str(a.getName())=='label'),'')
             pins[label]=c
     Width=J.JClass('com.cburch.logisim.data.BitWidth')
@@ -42,11 +42,19 @@ def check(J):
         raise AssertionError(f'CPU did not reach expected state: {dump}')
 
     def press(keys):
-        old=get('FRAME');set_pin('KEYS',keys)
-        wait(lambda:get('FRAME')!=old)
-        set_pin('KEYS',0);run(100)
+        old=get('FRAME')
+        watched=['SCORE','STATUS','LENGTH','BEST']+[f'RGB{r:02d}{group}' for r in range(16) for group in 'AB']
+        before=tuple(get(name) for name in watched)
+        # Pulse is complete before any CPU clock: the peripheral must retain it.
+        set_pin('KEYS',keys);set_pin('KEYS',0)
+        for _ in range(4000):
+            if get('FRAME')!=old:break
+            assert tuple(get(name) for name in watched)==before,'Partially rendered frame became visible'
+            run(1)
+        else:raise AssertionError('Short click was lost')
+        run(100)
 
-    set_pin('KEYS',0);set_pin('PERIOD',0x7fffffff);set_pin('RESET',1)
+    set_pin('KEYS',0);set_pin('PERIOD',0);set_pin('RESET',1)
     run(5);set_pin('RESET',0)
     elapsed=wait(lambda:get('FRAME')>=1)
     print('INITIAL',elapsed,'cycles', {k:get(k) for k in ['STATUS','SCORE','LENGTH','ROW08','FRAME']},flush=True)
@@ -65,7 +73,7 @@ def check(J):
     print('EAT / GROW / SCORE passed',flush=True)
     press(64)
     assert get('STATUS')==0 and get('SCORE')==0 and get('BEST')==1 and get('ROW08')==0x0710
-    print('RESTART passed. Actual Logisim forwarding CPU checks complete.',flush=True)
+    print('RESTART passed. Short-click retention and atomic display commits also passed.',flush=True)
 
 
 if __name__=='__main__':

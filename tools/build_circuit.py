@@ -24,7 +24,7 @@ def generate(J):
     factories = {}
     names = ['Pin','Tunnel','Constant','Bit Extender','Splitter','Probe','Clock',
              'AND Gate','NOT Gate','OR Gate','Multiplexer','Comparator','Adder',
-             'Register','DotMatrix','Button','Text','Hex Digit Display']
+             'Register','D Flip-Flop','DotMatrix','RGBLed','LED','Button','Text','Hex Digit Display']
     for lib in loader.getBuiltin().getLibraries():
         for name in names:
             tool = lib.getTool(name)
@@ -32,9 +32,13 @@ def generate(J):
     libraries = {name: num for num, group in {
         '0':['Pin','Tunnel','Constant','Bit Extender','Splitter','Probe','Clock'],
         '1':['AND Gate','NOT Gate','OR Gate'], '2':['Multiplexer'],
-        '3':['Comparator','Adder'], '4':['Register'],
-        '5':['DotMatrix','Button','Hex Digit Display'], '6':['Text']}.items() for name in group}
+        '3':['Comparator','Adder'], '4':['Register','D Flip-Flop'],
+        '5':['DotMatrix','RGBLed','LED','Button','Hex Digit Display'], '6':['Text']}.items() for name in group}
     location = J.JClass('com.cburch.logisim.data.Location')
+    display=loader.loadJarLibrary(J.java.io.File(str(ROOT/'snake-display.jar')),'snakeio.SnakeDisplayLibrary')
+    factories['Snake RGB Display']=display.getTool('Snake RGB Display').getFactory()
+    libraries['Snake RGB Display']='9'
+    E.SubElement(project,'lib',name='9',desc='jar#snake-display.jar#snakeio.SnakeDisplayLibrary')
 
     def comp(c, name, x, y, **attrs):
         el = E.SubElement(c, 'comp', lib=libraries[name], loc=point(x,y), name=name)
@@ -51,6 +55,10 @@ def generate(J):
     def tunnel(c, end, label):
         x,y,w = end
         comp(c,'Tunnel',x,y,width=w,label=label,facing='east')
+
+    def small_tunnel(c,end,label):
+        x,y,w=end
+        comp(c,'Tunnel',x,y,width=w,label=label,facing='east',labelfont='SansSerif plain 1')
 
     def const(c, end, value):
         x,y,w = end
@@ -107,8 +115,31 @@ def generate(J):
     for end,label in [(key_pin,'KEYS'),(period_pin,'PERIOD')]:
         comp(core,'Pin',*end[:2],width=end[2],output='false',tristate='false',facing='east',label=label)
         tunnel(core,end,'Game.'+label)
+    # Capture button rising edges even while the CPU is busy or not ticking.
+    # Software clears only the bits it consumed by writing to 0x70c.
+    compare(core,5000,100,0x70c,'Game.AckAddress')
+    gate(core,5100,160,'AND Gate',['Game.AckAddress','MemWrite'],'Game.AckWrite')
+    raw=comp(core,'Splitter',5000,280,facing='east',fanout=8,incoming=8,appear='center',
+             **{f'bit{i}':str(i) for i in range(8)})
+    tunnel(core,raw[0],'Game.KEYS')
+    ack=comp(core,'Splitter',5200,280,facing='east',fanout=8,incoming=32,appear='center',
+             **{f'bit{i}':(str(i) if i<8 else 'none') for i in range(32)})
+    tunnel(core,ack[0],'MDin')
+    pending=comp(core,'Splitter',5400,280,facing='west',fanout=8,incoming=8,appear='center',
+                 **{f'bit{i}':str(i) for i in range(8)})
+    tunnel(core,pending[0],'Game.PendingKeys')
+    for i in range(8):
+        tunnel(core,raw[i+1],f'Game.RawKey.{i}')
+        tunnel(core,ack[i+1],f'Game.AckBit.{i}')
+        tunnel(core,pending[i+1],f'Game.Pending.{i}')
+        y=500+i*160
+        gate(core,5100,y,'AND Gate',[f'Game.AckBit.{i}','Game.AckWrite'],f'Game.ClearKey.{i}')
+        gate(core,5200,y+60,'OR Gate',[f'Game.ClearKey.{i}','Game.Reset'],f'Game.ResetKey.{i}')
+        e=comp(core,'D Flip-Flop',5400,y,trigger='rising',enable='false')
+        const(core,e[0],1);tunnel(core,e[1],f'Game.Pending.{i}')
+        tunnel(core,e[3],f'Game.ResetKey.{i}');const(core,e[4],0);tunnel(core,e[5],f'Game.RawKey.{i}')
     e=comp(core,'Bit Extender',2920,100,in_width=8,out_width=32,type='zero')
-    tunnel(core,e[0],'Game.Keys32');tunnel(core,e[1],'Game.KEYS')
+    tunnel(core,e[0],'Game.Keys32');tunnel(core,e[1],'Game.PendingKeys')
     # Free running 32-bit cycle counter, clocked by the real CPU clock.
     e=comp(core,'Register',3100,180,width=32,trigger='rising',Select='low',label='CPU cycles')
     tunnel(core,e[0],'Game.Tick');tunnel(core,e[1],'Game.TickNext')
@@ -131,10 +162,50 @@ def generate(J):
         tunnel(core,e[0],value);tunnel(core,e[1],'MDin')
         tunnel(core,e[2],'CLK');tunnel(core,e[3],'Game.Reset');tunnel(core,e[4],enabled)
         reads.append((addr,value))
-        if name.startswith('ROW') or name in ('SCORE','STATUS','LENGTH','BEST','FRAME'):
-            pin=(x+120,y,32)
+        # Staging registers remain readable. Display banks update only on commit.
+        if name!='FRAME':
+            d=comp(core,'Register',x+240,y,width=32,trigger='rising',Select='low',label='Display '+name)
+            tunnel(core,d[0],'Game.Display.'+name);tunnel(core,d[1],value)
+            tunnel(core,d[2],'CLK');tunnel(core,d[3],'Game.Reset');tunnel(core,d[4],'Game.Write.FRAME')
+        if name.startswith('ROW'):
+            comp(core,'Probe',x+120,y,facing='west',label=name)
+            tunnel(core,(x+120,y,32),value)
+        elif name in ('SCORE','STATUS','LENGTH','BEST','FRAME'):
+            pin=(x+360,y,32)
             comp(core,'Pin',pin[0],pin[1],width=32,output='true',facing='west',label=name)
-            tunnel(core,pin,value);outputs.append((name,pin))
+            tunnel(core,pin,value if name=='FRAME' else 'Game.Display.'+name)
+            outputs.append((name,pin))
+
+    # Two 24-bit buses per row: the Logisim engine limits a value to 32 bits.
+    rgb_outputs=[]
+    for row in range(16):
+        x,y=6000+row*700,320
+        bits=comp(core,'Splitter',x,y,facing='east',fanout=16,incoming=32,appear='center',
+                  **{f'bit{i}':(str(15-i) if i<16 else 'none') for i in range(32)})
+        tunnel(core,bits[0],f'Game.Display.ROW{row:02d}')
+        packed=[comp(core,'Splitter',x+500,y+group*120,facing='west',fanout=8,incoming=24,appear='center',
+                     **{f'bit{i}':str(i//3) for i in range(24)}) for group in range(2)]
+        for col in range(16):
+            tag=f'{row}.{col}';py=550+col*220
+            tunnel(core,bits[col+1],'Pixel.Occ.'+tag)
+            for offset,kind in [(0,'HEAD'),(180,'FOOD')]:
+                e=comp(core,'Comparator',x+offset,py,width=32,mode='unsigned')
+                tunnel(core,e[0],'Game.Display.'+kind);const(core,e[1],row*16+col)
+                tunnel(core,e[3],'Pixel.'+kind+'.'+tag)
+            gate(core,x+340,py,'AND Gate',['Pixel.Occ.'+tag,'Pixel.FOOD.'+tag],'Pixel.R.'+tag)
+            e=comp(core,'NOT Gate',x+340,py+40,width=1,size=20,facing='east')
+            tunnel(core,e[1],'Pixel.FOOD.'+tag);tunnel(core,e[0],'Pixel.NotFood.'+tag)
+            gate(core,x+340,py+80,'AND Gate',['Pixel.Occ.'+tag,'Pixel.NotFood.'+tag],'Pixel.G.'+tag)
+            gate(core,x+340,py+120,'AND Gate',['Pixel.Occ.'+tag,'Pixel.HEAD.'+tag],'Pixel.B.'+tag)
+            rgb=comp(core,'Splitter',x+500,py,facing='west',fanout=3,incoming=3,appear='center',
+                     bit0='0',bit1='1',bit2='2')
+            for i,channel in enumerate('RGB'):tunnel(core,rgb[i+1],'Pixel.'+channel+'.'+tag)
+            tunnel(core,rgb[0],'Pixel.RGB.'+tag);tunnel(core,packed[col//8][col%8+1],'Pixel.RGB.'+tag)
+        for group in range(2):
+            pin=(x+560,y+group*120,24);name=f'RGB{row:02d}{"AB"[group]}'
+            comp(core,'Pin',pin[0],pin[1],width=24,output='true',facing='west',label=name)
+            wire(core,packed[group][0],pin);rgb_outputs.append((name,pin))
+    outputs=rgb_outputs+outputs
     # Reserve the entire 0x700..0x7ff page. Avoid duplicate writes to data RAM.
     e=comp(core,'Splitter',4400,100,facing='east',fanout=1,incoming=32,appear='center',
            **{f'bit{i}':('none' if i<8 else '0') for i in range(32)})
@@ -158,7 +229,7 @@ def generate(J):
 
     # Compact external appearance; internal CPU drawing remains accessible.
     appear=E.SubElement(core,'appear')
-    E.SubElement(appear,'rect',x='60',y='90',width='340',height='440',fill='#eef5ff',stroke='#21466d',**{'stroke-width':'2'})
+    E.SubElement(appear,'rect',x='60',y='90',width='340',height='600',fill='#eef5ff',stroke='#21466d',**{'stroke-width':'2'})
     for y,line in [(250,'RISC-V'),(270,'5-stage CPU'),(290,'Snake program')]:
         E.SubElement(appear,'text',x='220',y=str(y),**{'font-size':'16','text-anchor':'middle'}).text=line
     def port(pin,x,y,label,out=False):
@@ -167,8 +238,8 @@ def generate(J):
     port(key_pin,60,140,'KEYS');port(period_pin,60,200,'PERIOD');port((50,50,1),60,340,'RESET')
     positions={}
     for i,(name,pin) in enumerate(outputs):
-        y=100+i*10 if i<16 else 300+(i-16)*50
-        port(pin,400,y,name,True);positions[name]=(640,350+y-100,32)
+        y=100+i*10 if i<32 else 460+(i-32)*50
+        port(pin,400,y,name,True);positions[name]=(640,350+y-100,pin[2])
     E.SubElement(appear,'circ-anchor',x='197',y='97',width='6',height='6',facing='east')
 
     # A clean presentation circuit above the existing CPU circuit list.
@@ -177,10 +248,10 @@ def generate(J):
     E.SubElement(main,'comp',name='SnakeCore',loc='(440,350)')
     project.insert(list(project).index(project.findall('circuit')[0]),main)
     project.find('main').set('name','Snake')
-    text(main,80,65,'RISC-V SNAKE | CPU + PROGRAM + I/O',22)
-    text(main,80,95,'Start -> steer -> eat -> score. Pause / restart supported.',14)
-    text(main,80,125,'Enable simulation ticks. Hold buttons until the CPU polls them.',12)
-    text(main,80,155,'MANUAL=1: use STEP. MANUAL=0: automatic movement.',12)
+    text(main,80,65,'自制 RISC-V 贪吃蛇 | CPU + 汇编程序 + 彩色显示',22)
+    text(main,80,95,'短按会被锁存；开启仿真时钟后，CPU 自动读取按键事件。',14)
+    text(main,80,125,'MANUAL=1 手动单步；MANUAL=0 自动移动。SPEED=0/1/2/3 从慢到快。',12)
+    text(main,80,155,'青色：蛇头    绿色：蛇身    红色：食物    每帧完成后统一刷新',12)
     key_positions=[]
     for i,name in enumerate(['UP','RIGHT','DOWN','LEFT','START','PAUSE','RESTART','STEP']):
         x,y=110,240+i*55
@@ -194,27 +265,32 @@ def generate(J):
     # Default manual mode = 0, i.e. automatic. Users may toggle this input pin.
     e=comp(main,'Pin',200,710,width=1,output='false',tristate='false',facing='east',label='MANUAL (click 0/1)')
     tunnel(main,e[0],'Manual')
+    e=comp(main,'Pin',200,770,width=2,output='false',tristate='false',facing='east',label='SPEED 0/1/2/3')
+    tunnel(main,e[0],'Speed')
+    e=comp(main,'Multiplexer',250,850,width=32,select=2,enable='false',selloc='tr',facing='east')
+    for end,value in zip(e[:4],[8192,4096,2048,1024]):const(main,end,value)
+    tunnel(main,e[4],'Speed');tunnel(main,e[5],'AutoPeriod')
     e=comp(main,'Multiplexer',250,450,width=32,select=1,enable='false',selloc='tr',facing='east')
-    const(main,e[0],4096);const(main,e[1],0x7fffffff);tunnel(main,e[2],'Manual');wire(main,e[3],(300,450))
+    tunnel(main,e[0],'AutoPeriod');const(main,e[1],0);tunnel(main,e[2],'Manual');wire(main,e[3],(300,450))
     e=comp(main,'Button',230,590,facing='east',label='CPU RESET',labelloc='west',color='#ff8888')
     wire(main,e[0],(300,590))
-    matrix=comp(main,'DotMatrix',1000,350,inputtype='row',matrixcols=16,matrixrows=16,
-                color='#36d981',offcolor='#18282c',persist=0,dotshape='square')
-    text(main,950,295,'16 x 16 GAME BOARD',16)
-    for i in range(16):
-        end=positions[f'ROW{i:02d}'];x,y,_=end
-        e=comp(main,'Splitter',740,y,facing='east',fanout=1,incoming=32,appear='center',
-               **{f'bit{j}':('0' if j<16 else 'none') for j in range(32)})
-        wire(main,end,e[0]);wire(main,e[1],matrix[i])
+    display=comp(main,'Snake RGB Display',1000,350)
+    for row in range(16):
+        for group in range(2):
+            end=positions[f'RGB{row:02d}{"AB"[group]}']
+            wire(main,end,display[row*2+group])
     # Readable decimal probes avoid forcing viewers to interpret hexadecimal scores.
     for i,name in enumerate(['SCORE','STATUS','LENGTH','BEST','FRAME']):
         out=positions[name]
         y=out[1]
-        wire(main,out,(1000,y))
-        e=comp(main,'Probe',1000,y,facing='west',radix='10unsigned',label=name,labelloc='north')
-    text(main,760,815,'STATUS: 0 READY / 1 RUN / 2 PAUSE / 3 GAME OVER / 4 WIN',12)
-    text(main,760,840,'Snake = connected cells; food = isolated cell. First food is ahead.',12)
-    tree.write(ROOT/'snake.circ',encoding='UTF-8',xml_declaration=True)
+        wire(main,out,(780,y))
+        e=comp(main,'Probe',780,y,facing='west',radix='10unsigned',label=name,labelloc='north')
+    text(main,1000,730,'状态：0 准备 / 1 运行 / 2 暂停 / 3 结束 / 4 获胜',13)
+    text(main,1000,765,'START 开始；PAUSE 暂停/恢复。',13)
+    text(main,1000,795,'RESTART 重开并保留最高分。',13)
+    text(main,1000,835,'SPEED：0 慢 / 1 中 / 2 快 / 3 很快',13)
+    E.indent(tree,space='  ')
+    (ROOT/'snake.circ').write_bytes(E.tostring(project,encoding='UTF-8',xml_declaration=True))
     (ROOT/'build/symbols.json').write_text(json.dumps(labels,indent=2),encoding='utf-8')
     print(f'Built snake.circ: {len(words)} ROM words, original CPU circuits retained.')
 
