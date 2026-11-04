@@ -1,0 +1,19 @@
+# Local Python dependencies and caches
+tools/_vendor/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local editor and system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Local credentials/configuration
+.env
+.env.*
+!.env.example

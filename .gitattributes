@@ -1,0 +1,9 @@
+* text=auto
+# Preserve circuit files, including the byte-for-byte original backup.
+*.circ -text
+*.cmd text eol=crlf
+*.py text eol=lf
+*.s text eol=lf
+*.md text eol=lf
+*.hex text eol=lf
+*.lst text eol=lf

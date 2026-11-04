@@ -1,0 +1,279 @@
+0000 68000113 addi sp, zero, 1664
+0004 70000d93 addi s11, zero, 1792
+0008 02002623 sw zero, 44(zero)
+000c 50000293 addi t0, zero, 1280
+0010 00100313 addi t1, zero, 1
+0014 00f31313 slli t1, t1, 15
+0018 01000393 addi t2, zero, 16
+001c 0062a023 sw t1, 0(t0)
+0020 00135313 srli t1, t1, 1
+0024 00428293 addi t0, t0, 4
+0028 fff38393 addi t2, t2, -1
+002c fe0398e3 bne t2, zero, init_masks
+0030 144000ef jal ra, game_reset
+0034 000da283 lw t0, 0(s11)
+0038 02402303 lw t1, 36(zero)
+003c 02502223 sw t0, 36(zero)
+0040 fff34313 xori t1, t1, -1
+0044 0062f333 and t1, t0, t1
+0048 00030f93 addi t6, t1, 0
+004c 04037393 andi t2, t1, 64
+0050 0c039e63 bne t2, zero, restart
+0054 01037393 andi t2, t1, 16
+0058 00038663 beq t2, zero, check_pause
+005c 01802383 lw t2, 24(zero)
+0060 0c038a63 beq t2, zero, begin_game
+0064 02037393 andi t2, t1, 32
+0068 00038c63 beq t2, zero, check_direction
+006c 01802383 lw t2, 24(zero)
+0070 00100e13 addi t3, zero, 1
+0074 0dc38c63 beq t2, t3, pause_game
+0078 00200e13 addi t3, zero, 2
+007c 0fc38063 beq t2, t3, resume_game
+0080 01802383 lw t2, 24(zero)
+0084 00100e13 addi t3, zero, 1
+0088 fbc396e3 bne t2, t3, main
+008c 00c02383 lw t2, 12(zero)
+0090 0012fe13 andi t3, t0, 1
+0094 000e0a63 beq t3, zero, try_right
+0098 00200e93 addi t4, zero, 2
+009c 05d38c63 beq t2, t4, check_time
+00a0 02002423 sw zero, 40(zero)
+00a4 0500006f jal zero, check_time
+00a8 0022fe13 andi t3, t0, 2
+00ac 000e0c63 beq t3, zero, try_down
+00b0 00300e93 addi t4, zero, 3
+00b4 05d38063 beq t2, t4, check_time
+00b8 00100e93 addi t4, zero, 1
+00bc 03d02423 sw t4, 40(zero)
+00c0 0340006f jal zero, check_time
+00c4 0042fe13 andi t3, t0, 4
+00c8 000e0a63 beq t3, zero, try_left
+00cc 02038463 beq t2, zero, check_time
+00d0 00200e93 addi t4, zero, 2
+00d4 03d02423 sw t4, 40(zero)
+00d8 01c0006f jal zero, check_time
+00dc 0082fe13 andi t3, t0, 8
+00e0 000e0a63 beq t3, zero, check_time
+00e4 00100e93 addi t4, zero, 1
+00e8 01d38663 beq t2, t4, check_time
+00ec 00300e93 addi t4, zero, 3
+00f0 03d02423 sw t4, 40(zero)
+00f4 004da283 lw t0, 4(s11)
+00f8 080ffe13 andi t3, t6, 128
+00fc 000e1c63 bne t3, zero, move_now
+0100 02002303 lw t1, 32(zero)
+0104 40628333 sub t1, t0, t1
+0108 008da383 lw t2, 8(s11)
+010c 00733e33 sltu t3, t1, t2
+0110 f20e12e3 bne t3, zero, main
+0114 02502023 sw t0, 32(zero)
+0118 02802303 lw t1, 40(zero)
+011c 00602623 sw t1, 12(zero)
+0120 0cc000ef jal ra, game_step
+0124 260000ef jal ra, render
+0128 f0dff06f jal zero, main
+012c 048000ef jal ra, game_reset
+0130 f05ff06f jal zero, main
+0134 00100393 addi t2, zero, 1
+0138 00702c23 sw t2, 24(zero)
+013c 004da283 lw t0, 4(s11)
+0140 02502023 sw t0, 32(zero)
+0144 240000ef jal ra, render
+0148 eedff06f jal zero, main
+014c 00200393 addi t2, zero, 2
+0150 00702c23 sw t2, 24(zero)
+0154 230000ef jal ra, render
+0158 eddff06f jal zero, main
+015c 00100393 addi t2, zero, 1
+0160 00702c23 sw t2, 24(zero)
+0164 004da283 lw t0, 4(s11)
+0168 02502023 sw t0, 32(zero)
+016c 218000ef jal ra, render
+0170 ec5ff06f jal zero, main
+0174 ff010113 addi sp, sp, -16
+0178 00112623 sw ra, 12(sp)
+017c 00300293 addi t0, zero, 3
+0180 00502023 sw t0, 0(zero)
+0184 00002223 sw zero, 4(zero)
+0188 00200293 addi t0, zero, 2
+018c 00502423 sw t0, 8(zero)
+0190 00100293 addi t0, zero, 1
+0194 00502623 sw t0, 12(zero)
+0198 02502423 sw t0, 40(zero)
+019c 08b00293 addi t0, zero, 139
+01a0 00502823 sw t0, 16(zero)
+01a4 02500293 addi t0, zero, 37
+01a8 00502a23 sw t0, 20(zero)
+01ac 00002c23 sw zero, 24(zero)
+01b0 00002e23 sw zero, 28(zero)
+01b4 004da283 lw t0, 4(s11)
+01b8 02502023 sw t0, 32(zero)
+01bc 000da283 lw t0, 0(s11)
+01c0 02502223 sw t0, 36(zero)
+01c4 08500293 addi t0, zero, 133
+01c8 10502023 sw t0, 256(zero)
+01cc 08600293 addi t0, zero, 134
+01d0 10502223 sw t0, 260(zero)
+01d4 08700293 addi t0, zero, 135
+01d8 10502423 sw t0, 264(zero)
+01dc 1a8000ef jal ra, render
+01e0 00c12083 lw ra, 12(sp)
+01e4 01010113 addi sp, sp, 16
+01e8 00008067 jalr zero, 0(ra)
+01ec ff010113 addi sp, sp, -16
+01f0 00112623 sw ra, 12(sp)
+01f4 00802283 lw t0, 8(zero)
+01f8 00229293 slli t0, t0, 2
+01fc 10028293 addi t0, t0, 256
+0200 0002a403 lw s0, 0(t0)
+0204 00f47313 andi t1, s0, 15
+0208 00445393 srli t2, s0, 4
+020c 00c02283 lw t0, 12(zero)
+0210 02028063 beq t0, zero, move_up
+0214 00100e13 addi t3, zero, 1
+0218 03c28263 beq t0, t3, move_right
+021c 00200e13 addi t3, zero, 2
+0220 03c28663 beq t0, t3, move_down
+0224 0e030663 beq t1, zero, lose
+0228 fff40413 addi s0, s0, -1
+022c 02c0006f jal zero, collision
+0230 0e038063 beq t2, zero, lose
+0234 ff040413 addi s0, s0, -16
+0238 0200006f jal zero, collision
+023c 00f00e13 addi t3, zero, 15
+0240 0dc30863 beq t1, t3, lose
+0244 00140413 addi s0, s0, 1
+0248 0100006f jal zero, collision
+024c 00f00e13 addi t3, zero, 15
+0250 0dc38063 beq t2, t3, lose
+0254 01040413 addi s0, s0, 16
+0258 01002283 lw t0, 16(zero)
+025c 405402b3 sub t0, s0, t0
+0260 005034b3 sltu s1, zero, t0
+0264 0014c493 xori s1, s1, 1
+0268 00402283 lw t0, 4(zero)
+026c 00002303 lw t1, 0(zero)
+0270 00049863 bne s1, zero, collision_loop
+0274 00128293 addi t0, t0, 1
+0278 0ff2f293 andi t0, t0, 255
+027c fff30313 addi t1, t1, -1
+0280 02030263 beq t1, zero, accept_move
+0284 00229393 slli t2, t0, 2
+0288 10038393 addi t2, t2, 256
+028c 0003ae03 lw t3, 0(t2)
+0290 088e0063 beq t3, s0, lose
+0294 00128293 addi t0, t0, 1
+0298 0ff2f293 andi t0, t0, 255
+029c fff30313 addi t1, t1, -1
+02a0 fe1ff06f jal zero, collision_loop
+02a4 00802283 lw t0, 8(zero)
+02a8 00128293 addi t0, t0, 1
+02ac 0ff2f293 andi t0, t0, 255
+02b0 00502423 sw t0, 8(zero)
+02b4 00229293 slli t0, t0, 2
+02b8 10028293 addi t0, t0, 256
+02bc 0082a023 sw s0, 0(t0)
+02c0 00049c63 bne s1, zero, grow
+02c4 00402283 lw t0, 4(zero)
+02c8 00128293 addi t0, t0, 1
+02cc 0ff2f293 andi t0, t0, 255
+02d0 00502223 sw t0, 4(zero)
+02d4 0580006f jal zero, step_return
+02d8 00002283 lw t0, 0(zero)
+02dc 00128293 addi t0, t0, 1
+02e0 00502023 sw t0, 0(zero)
+02e4 01c02303 lw t1, 28(zero)
+02e8 00130313 addi t1, t1, 1
+02ec 00602e23 sw t1, 28(zero)
+02f0 02c02383 lw t2, 44(zero)
+02f4 0063be33 sltu t3, t2, t1
+02f8 000e0463 beq t3, zero, check_win
+02fc 02602623 sw t1, 44(zero)
+0300 10000313 addi t1, zero, 256
+0304 00628c63 beq t0, t1, win
+0308 030000ef jal ra, spawn_food
+030c 0200006f jal zero, step_return
+0310 00300293 addi t0, zero, 3
+0314 00502c23 sw t0, 24(zero)
+0318 0140006f jal zero, step_return
+031c 00400293 addi t0, zero, 4
+0320 00502c23 sw t0, 24(zero)
+0324 fff00293 addi t0, zero, -1
+0328 00502823 sw t0, 16(zero)
+032c 00c12083 lw ra, 12(sp)
+0330 01010113 addi sp, sp, 16
+0334 00008067 jalr zero, 0(ra)
+0338 01402283 lw t0, 20(zero)
+033c 00229313 slli t1, t0, 2
+0340 006282b3 add t0, t0, t1
+0344 00128293 addi t0, t0, 1
+0348 0ff2f293 andi t0, t0, 255
+034c 00402303 lw t1, 4(zero)
+0350 00002383 lw t2, 0(zero)
+0354 02038263 beq t2, zero, food_found
+0358 00231e13 slli t3, t1, 2
+035c 100e0e13 addi t3, t3, 256
+0360 000e2e83 lw t4, 0(t3)
+0364 fc5e8ce3 beq t4, t0, next_candidate
+0368 00130313 addi t1, t1, 1
+036c 0ff37313 andi t1, t1, 255
+0370 fff38393 addi t2, t2, -1
+0374 fe1ff06f jal zero, food_scan
+0378 00502a23 sw t0, 20(zero)
+037c 00502823 sw t0, 16(zero)
+0380 00008067 jalr zero, 0(ra)
+0384 ff010113 addi sp, sp, -16
+0388 00112623 sw ra, 12(sp)
+038c 74000293 addi t0, zero, 1856
+0390 01000313 addi t1, zero, 16
+0394 0002a023 sw zero, 0(t0)
+0398 00428293 addi t0, t0, 4
+039c fff30313 addi t1, t1, -1
+03a0 fe031ae3 bne t1, zero, clear_rows
+03a4 00402b03 lw s6, 4(zero)
+03a8 00002b83 lw s7, 0(zero)
+03ac 002b1293 slli t0, s6, 2
+03b0 10028293 addi t0, t0, 256
+03b4 0002a503 lw a0, 0(t0)
+03b8 078000ef jal ra, draw_cell
+03bc 001b0b13 addi s6, s6, 1
+03c0 0ffb7b13 andi s6, s6, 255
+03c4 fffb8b93 addi s7, s7, -1
+03c8 fe0b92e3 bne s7, zero, draw_snake
+03cc 01002503 lw a0, 16(zero)
+03d0 fff00293 addi t0, zero, -1
+03d4 00550463 beq a0, t0, metadata
+03d8 058000ef jal ra, draw_cell
+03dc 01c02283 lw t0, 28(zero)
+03e0 085da023 sw t0, 128(s11)
+03e4 01802283 lw t0, 24(zero)
+03e8 085da223 sw t0, 132(s11)
+03ec 00802283 lw t0, 8(zero)
+03f0 00229293 slli t0, t0, 2
+03f4 10028293 addi t0, t0, 256
+03f8 0002a283 lw t0, 0(t0)
+03fc 085da423 sw t0, 136(s11)
+0400 01002283 lw t0, 16(zero)
+0404 085da623 sw t0, 140(s11)
+0408 00002283 lw t0, 0(zero)
+040c 085da823 sw t0, 144(s11)
+0410 02c02283 lw t0, 44(zero)
+0414 085daa23 sw t0, 148(s11)
+0418 098da283 lw t0, 152(s11)
+041c 00128293 addi t0, t0, 1
+0420 085dac23 sw t0, 152(s11)
+0424 00c12083 lw ra, 12(sp)
+0428 01010113 addi sp, sp, 16
+042c 00008067 jalr zero, 0(ra)
+0430 00f57293 andi t0, a0, 15
+0434 00229293 slli t0, t0, 2
+0438 50028293 addi t0, t0, 1280
+043c 0002a303 lw t1, 0(t0)
+0440 00455293 srli t0, a0, 4
+0444 00229293 slli t0, t0, 2
+0448 74028293 addi t0, t0, 1856
+044c 0002a383 lw t2, 0(t0)
+0450 0063e3b3 or t2, t2, t1
+0454 0072a023 sw t2, 0(t0)
+0458 00008067 jalr zero, 0(ra)
